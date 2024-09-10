@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+    influxdb:
+        container_name: ${CONTAINER_PREFIX}_influxdb
+        environment:
+          - PUID=1000
+          - PGID=1000
+          - TZ=${TIMEZONE}
+        ports:
+            - ${INFLUXDB_PORT}:${INFLUXDB_PORT}
+        volumes:
+            - ./influxdb:/var/lib/influxdb
+        restart: unless-stopped
+        env_file:
+            - .env
+        networks:
+            - backend
+            - frontend
+    telegraf:
+        build: ./telegraf
+        container_name: ${CONTAINER_PREFIX}_telegraf
+        environment:
+          - PUID=1000
+          - PGID=1000
+          - TZ=${TIMEZONE}
+        links:
+            - influxdb
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /proc:/hostfs/proc
+        privileged: true
+        restart: unless-stopped
+        env_file:
+            - .env
+        networks: 
+            - backend
+    grafana:
+        container_name: ${CONTAINER_PREFIX}_grafana
+        environment:
+          - PUID=1000
+          - PGID=1000
+          - TZ=${TIMEZONE}
+        ports: 
+            - ${GRAFANA_PORT}:${GRAFANA_PORT}
+        links:
+            - influxdb
+        volumes:
+            - ./grafana/lib:/var/lib/grafana
+            - ./grafana/log:/var/log/grafana
+            - ./grafana/lib/grafana:/var/lib/grafana/plugins
+        restart: unless-stopped
+        env_file:
+            - .env
+        networks:
+            - frontend
+
+networks:
+    backend:
+    frontend:
