@@ -2,6 +2,7 @@ version: "3"
 
 services:
     influxdb:
+        image: influxdb:latest
         container_name: ${CONTAINER_PREFIX}_influxdb
         environment:
           - PUID=1000
@@ -18,7 +19,7 @@ services:
             - backend
             - frontend
     telegraf:
-        build: ./telegraf
+        image: docker.io/telegraf:latest
         container_name: ${CONTAINER_PREFIX}_telegraf
         environment:
           - PUID=1000
@@ -33,27 +34,25 @@ services:
         restart: unless-stopped
         env_file:
             - .env
-        networks: 
+        networks:
             - backend
     grafana:
+        image: grafana/grafana:latest
         container_name: ${CONTAINER_PREFIX}_grafana
         environment:
-          - PUID=1000
-          - PGID=1000
           - TZ=${TIMEZONE}
-        ports: 
+        ports:
             - ${GRAFANA_PORT}:${GRAFANA_PORT}
         links:
             - influxdb
         volumes:
-            - ./grafana/lib:/var/lib/grafana
-            - ./grafana/log:/var/log/grafana
-            - ./grafana/lib/grafana:/var/lib/grafana/plugins
+            - ./grafana/data:/var/lib/grafana
         restart: unless-stopped
         env_file:
             - .env
         networks:
             - frontend
+        user: "0"
 
 networks:
     backend:
