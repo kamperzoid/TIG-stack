@@ -61,3 +61,7 @@ services:
         user: "0"
         depends_on:
             - influxdb
+
+networks:
+    backend:
+    frontend:
