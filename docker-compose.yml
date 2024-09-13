@@ -2,7 +2,7 @@ version: "3"
 
 services:
     influxdb:
-        image: influxdb:latest
+        image: influxdb:2.7.10
         container_name: ${CONTAINER_PREFIX}_influxdb
         environment:
           - PUID=1000
@@ -11,7 +11,8 @@ services:
         ports:
             - ${INFLUXDB_PORT}:${INFLUXDB_PORT}
         volumes:
-            - ./influxdb:/var/lib/influxdb
+            - ./influxdb/data:/var/lib/influxdb2
+            - ./influxdb/config:/etc/influxdb2
         restart: unless-stopped
         env_file:
             - .env
@@ -19,7 +20,7 @@ services:
             - backend
             - frontend
     telegraf:
-        image: docker.io/telegraf:latest
+        image: docker.io/telegraf:1.32
         container_name: ${CONTAINER_PREFIX}_telegraf
         environment:
           - PUID=1000
@@ -38,23 +39,25 @@ services:
         networks:
             - backend
     grafana:
-        image: grafana/grafana:latest
+        image: grafana/grafana:11.2.0
         container_name: ${CONTAINER_PREFIX}_grafana
         environment:
-          - TZ=${TIMEZONE}
+            - TZ=${TIMEZONE}
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+            - GF_USERS_ALLOW_SIGN_UP=false
+            - GF_SERVER_ROOT_URL=http://${GRAFANA_DOMAIN}
+            - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
         ports:
-            - ${GRAFANA_PORT}:${GRAFANA_PORT}
-        links:
-            - influxdb
+            - "${GRAFANA_PORT}:3000"
         volumes:
             - ./grafana/data:/var/lib/grafana
+            - ./grafana/provisioning:/etc/grafana/provisioning
         restart: unless-stopped
         env_file:
             - .env
         networks:
             - frontend
         user: "0"
-
-networks:
-    backend:
-    frontend:
+        depends_on:
+            - influxdb
